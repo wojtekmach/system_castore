@@ -8,5 +8,5 @@ Currently only macOS is supported.
 
 ```elixir
 SystemCAStore.file_path()
-#=> /Users/me/system_castore/_build/dev/lib/system_castore/priv/cacerts.pem"
+#=> "/Users/me/system_castore/_build/dev/lib/system_castore/priv/cacerts.pem"
 ```
