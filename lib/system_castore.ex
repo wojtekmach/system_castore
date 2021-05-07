@@ -1,25 +1,31 @@
 defmodule SystemCAStore do
-  @moduledoc """
-  Functions to access the system CA store.
-
-  Currently only macOS is supported.
-  """
-
-  @system_root_keychain "/System/Library/Keychains/SystemRootCertificates.keychain"
+  @moduledoc "README.md"
+             |> File.read!()
+             |> String.split("<!-- MDOC !-->")
+             |> Enum.fetch!(1)
 
   @doc """
   Returns the path to the CA certificate store PEM file.
-
-  ## Examples
-
-      SystemCAStore.file_path()
-      #=> /Users/me/system_castore/_build/dev/lib/system_castore/priv/cacerts.pem"
-
   """
   def file_path() do
+    case :os.type() do
+      {:unix, :darwin} ->
+        macos_cached_file_path()
+
+      {:unix, :linux} ->
+        "/etc/ssl/certs/ca-certificates.crt"
+
+      other ->
+        raise ArgumentError, "OS not supported: #{inspect(other)}"
+    end
+  end
+
+  @system_root_keychain "/System/Library/Keychains/SystemRootCertificates.keychain"
+
+  defp macos_cached_file_path() do
     if cached_path_mtime() < File.stat!(@system_root_keychain).mtime() do
       path = cached_path()
-      pem = extract()
+      pem = macos_extract()
       File.mkdir_p!(Path.dirname(path))
       File.write!(path, pem)
       path
@@ -39,7 +45,7 @@ defmodule SystemCAStore do
     Application.app_dir(:system_castore, "priv/cacerts.pem")
   end
 
-  defp extract() do
+  defp macos_extract() do
     case System.cmd("security", ~w(find-certificate -a -p #{@system_root_keychain})) do
       {pem, 0} ->
         pem
